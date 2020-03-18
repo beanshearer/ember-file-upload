@@ -7,6 +7,10 @@ export default class {
     this._listeners = A();
     this._stack = [];
 
+    // This is used to prevent `dragover` removing the
+    // listener when being dragged over child elements.
+    this._draggedOverElementsCount = 0;
+
     // Keep a stack of deferred actions to take
     // on listeners to provide sane events.
     // `dragleave` / `dragenter` are called on the
@@ -119,6 +123,8 @@ export default class {
   }
 
   dragenter(evt) {
+    this._draggedOverElementsCount++;
+
     let listener = this.findListener(evt);
     let lastListener = this._stack[this._stack.length - 1];
 
@@ -138,10 +144,14 @@ export default class {
   }
 
   dragleave(evt) {
-    // Trigger a dragleave if the file leaves the browser
-    if (this._stack.length) {
-      this.scheduleEvent('dragleave', this._stack[0], evt);
-      this._listener = null;
+    this._draggedOverElementsCount--;
+
+    if (this._draggedOverElementsCount === 0) {
+      // Trigger a dragleave if the file leaves the browser
+      if (this._stack.length) {
+        this.scheduleEvent('dragleave', this._stack[0], evt);
+        this._listener = null;
+      }
     }
   }
 
@@ -211,6 +221,7 @@ export default class {
     this._events = A();
     this._scheduled = false;
     this._listener = null;
+    this._draggedOverElementsCount = 0;
 
     evt.preventDefault();
     evt.stopPropagation();
